@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Audit Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --card: #ffffff;
+            --text: #1f2937;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .title i {
+            color: var(--primary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-pass {
+            background: #dcfce7;
+            color: var(--success);
+        }
+
+        .status-fail {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .status-warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .card-content {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .summary {
+            background: var(--card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .summary-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .actions {
+                width: 100%;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .card {
+            position: relative;
+            min-height: 200px;
+            resize: both;
+            overflow: auto;
+            min-width: 300px;
+        }
+
+        .card::after {
+            content: '↘️';
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 12px;
+            opacity: 0.5;
+            cursor: se-resize;
+        }
+
+        .suggestions {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #fffbeb;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .suggestions h4 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .suggestions ul {
+            margin: 0;
+            padding-left: 1.5rem;
+            color: #92400e;
+        }
+
+        .suggestions li {
+            margin-bottom: 0.25rem;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .card-btn {
+            padding: 0.25rem 0.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #f1f5f9;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .card-btn:hover {
+            background: #e2e8f0;
+        }
+
+        .expand-btn {
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <i class="fas fa-shield-alt"></i>
+                Security Audit Dashboard
+            </h1>
+            <div class="actions">
+                <button id="runAuditBtn" class="btn btn-primary">
+                    <i class="fas fa-play"></i>
+                    Run Audit
+                </button>
+                <button id="downloadReportBtn" class="btn btn-secondary" disabled>
+                    <i class="fas fa-download"></i>
+                    Download Report
+                </button>
+            </div>
+        </header>
+
+        <div class="summary">
+            <div class="summary-item">
+                <span class="summary-label">Total Checks</span>
+                <span class="summary-value" id="totalChecks">0</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Passed</span>
+                <span class="summary-value" id="passedChecks">0</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Failed</span>
+                <span class="summary-value" id="failedChecks">0</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-label">Warnings</span>
+                <span class="summary-value" id="warningChecks">0</span>
+            </div>
+        </div>
+
+        <div class="grid" id="auditResults"></div>
+    </div>
+
+    <div class="loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <script>
+        const runAuditBtn = document.getElementById('runAuditBtn');
+        const downloadReportBtn = document.getElementById('downloadReportBtn');
+        const auditResults = document.getElementById('auditResults');
+        const loading = document.querySelector('.loading');
+
+        // Status icon mapping
+        const statusIcons = {
+            'firewall_status': 'fa-fire-alt',
+            'antivirus_status': 'fa-virus-slash',
+            'windows_update_status': 'fa-sync',
+            'admin_status': 'fa-user-shield',
+            'audit_policy': 'fa-clipboard-list',
+            'system_info': 'fa-info-circle',
+            'running_services': 'fa-cogs',
+            'network_connections': 'fa-network-wired',
+            'user_accounts': 'fa-users',
+            'scheduled_tasks': 'fa-calendar-check'
+        };
+
+        // Format section titles
+        function formatTitle(key) {
+            return key.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Create card element for each check
+        function createCard(key, data) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        const statusClass = data.status === 'pass' ? 'status-pass' : 
+                          data.status === 'warning' ? 'status-warning' : 'status-fail';
+        
+        let suggestionsHtml = '';
+        if (data.suggestions && data.suggestions.length > 0) {
+            suggestionsHtml = `
+                <div class="suggestions">
+                    <h4><i class="fas fa-lightbulb"></i> Recommendations</h4>
+                    <ul>
+                        ${data.suggestions.map(suggestion => `<li>${suggestion}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas ${statusIcons[key] || 'fa-check-circle'}"></i>
+                    ${formatTitle(key)}
+                </h3>
+                <span class="status-badge ${statusClass}">
+                    ${data.status.toUpperCase()}
+                </span>
+            </div>
+            <div class="card-content">${data.output}</div>
+            ${suggestionsHtml}
+            <div class="card-actions">
+                <button class="card-btn expand-btn" onclick="toggleCardSize(this)">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        `;
+
+        // Make the card resizable using native resize
+        card.style.resize = 'both';
+        card.style.overflow = 'auto';
+        
+        return card;
+    }
+
+    // Add function to toggle card size
+    function toggleCardSize(button) {
+        const card = button.closest('.card');
+        const icon = button.querySelector('i');
+        
+        if (card.style.width === '100%') {
+            // Restore original size
+            card.style.width = '';
+            card.style.height = '';
+            icon.classList.remove('fa-compress');
+            icon.classList.add('fa-expand');
+        } else {
+            // Expand to full width
+            card.style.width = '100%';
+            card.style.height = '500px';
+            icon.classList.remove('fa-expand');
+            icon.classList.add('fa-compress');
+        }
+    }
+
+        // Update summary counts
+        function updateSummary(results) {
+            const counts = {
+                total: 0,
+                pass: 0,
+                fail: 0,
+                warning: 0
+            };
+
+            Object.values(results).forEach(result => {
+                counts.total++;
+                counts[result.status]++;
+            });
+
+            document.getElementById('totalChecks').textContent = counts.total;
+            document.getElementById('passedChecks').textContent = counts.pass;
+            document.getElementById('failedChecks').textContent = counts.fail;
+            document.getElementById('warningChecks').textContent = counts.warning;
+        }
+
+        // Run security audit
+        async function runAudit() {
+            try {
+                loading.style.display = 'flex';
+                runAuditBtn.disabled = true;
+                
+                const response = await fetch('/run_audit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const results = await response.json();
+                
+                // Clear previous results
+                auditResults.innerHTML = '';
+                
+                // Create and append cards for each check
+                Object.entries(results).forEach(([key, data]) => {
+                    const card = createCard(key, data);
+                    auditResults.appendChild(card);
+                });
+
+                // Update summary
+                updateSummary(results);
+                
+                // Enable download button
+                downloadReportBtn.disabled = false;
+
+                // Add animation to cards
+                document.querySelectorAll('.card').forEach((card, index) => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    setTimeout(() => {
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, index * 100);
+                });
+
+            } catch (error) {
+                console.error('Error running audit:', error);
+                alert('An error occurred while running the security audit.');
+            } finally {
+                loading.style.display = 'none';
+                runAuditBtn.disabled = false;
+            }
+        }
+
+        // Event listeners
+        runAuditBtn.addEventListener('click', runAudit);
+        
+        downloadReportBtn.addEventListener('click', () => {
+            window.location.href = '/download_report';
+        });
+
+        // Initialize tooltips
+        document.querySelectorAll('[data-tooltip]').forEach(element => {
+            element.addEventListener('mouseover', e => {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = e.target.dataset.tooltip;
+                document.body.appendChild(tooltip);
+                
+                const rect = e.target.getBoundingClientRect();
+                tooltip.style.top = rect.bottom + 5 + 'px';
+                tooltip.style.left = rect.left + 'px';
+            });
+            
+            element.addEventListener('mouseout', () => {
+                document.querySelector('.tooltip')?.remove();
+            });
+        });
+        function saveCardSizes() {
+        const cards = document.querySelectorAll('.card');
+        const sizes = {};
+        
+        cards.forEach((card, index) => {
+            sizes[index] = {
+                width: card.style.width,
+                height: card.style.height
+            };
+        });
+        
+        localStorage.setItem('cardSizes', JSON.stringify(sizes));
+    }
+
+    // Add this to restore card sizes
+    function restoreCardSizes() {
+        const saved = localStorage.getItem('cardSizes');
+        if (saved) {
+            const sizes = JSON.parse(saved);
+            const cards = document.querySelectorAll('.card');
+            
+            cards.forEach((card, index) => {
+                if (sizes[index]) {
+                    card.style.width = sizes[index].width;
+                    card.style.height = sizes[index].height;
+                }
+            });
+        }
+    }
+
+    // Add event listener for size changes
+    document.addEventListener('mouseup', () => {
+        saveCardSizes();
+    });
+
+    // Restore sizes after audit runs
+    const originalRunAudit = runAudit;
+    runAudit = async () => {
+        await originalRunAudit();
+        setTimeout(restoreCardSizes, 100);
+    };
+    </script>
+</body>
+</html>
